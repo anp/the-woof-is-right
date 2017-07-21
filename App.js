@@ -1,69 +1,265 @@
-import React from 'react';
-import { Platform, StatusBar, StyleSheet, View } from 'react-native';
-import { AppLoading, Asset, Font } from 'expo';
-import { Ionicons } from '@expo/vector-icons';
-import RootNavigation from './navigation/RootNavigation';
+import React, { Component } from "react";
+import {
+  Text,
+  Image,
+  View,
+  StyleSheet,
+  Dimensions,
+  PanResponder,
+  Animated
+} from "react-native";
+import { Constants } from "expo";
 
-export default class App extends React.Component {
-  state = {
-    assetsAreLoaded: false,
-  };
+const HANDSOMEINDIVIDUALS = [
+  {
+    name: "Ken",
+    age: 30,
+    photo: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+  },
+  {
+    name: "Ken",
+    age: 30,
+    photo: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+  },
+  {
+    name: "Ken",
+    age: 30,
+    photo: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+  },
+  {
+    name: "Ken",
+    age: 30,
+    photo: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+  },
+  {
+    name: "Ken",
+    age: 30,
+    photo: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+  }
+];
+
+const Card = props => (
+  <View
+    style={[
+      styles.card,
+      {
+        transform: [
+          {
+            scale: 1 - props.index * 0.01
+          }
+        ],
+        zIndex: HANDSOMEINDIVIDUALS.length - props.index,
+        top: props.index * 7
+      }
+    ]}
+  >
+    <Image
+      source={{
+        uri: "https://pbs.twimg.com/profile_images/792591170899681280/uUXOGmgo.jpg"
+      }}
+      style={{
+        height: props.width - 30,
+        width: props.width - 30
+      }}
+    /> <Text style={styles.cardText}> Ken, 30 </Text>
+  </View>
+);
+
+class ActiveCard extends Component {
+  position = new Animated.ValueXY(0, 0);
+  rotation = new Animated.Value(0);
 
   componentWillMount() {
-    this._loadAssetsAsync();
+    this._panResponder = PanResponder.create({
+      // Ask to be the responder:
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponderCapture: () => true,
+
+      onPanResponderGrant: (evt, gestureState) => {},
+      onPanResponderMove: Animated.event([
+        null,
+        {
+          dx: this.position.x,
+          dy: this.position.y
+        }
+      ]),
+      onPanResponderTerminationRequest: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        Animated.spring(this.position, {
+          toValue: {
+            x: 0,
+            y: 0
+          }
+        }).start();
+      },
+      onPanResponderTerminate: (evt, gestureState) => {
+        this.position.setValue({
+          x: 0,
+          y: 0
+        });
+      },
+      onShouldBlockNativeResponder: () => {
+        return true;
+      }
+    });
   }
 
   render() {
-    if (!this.state.assetsAreLoaded && !this.props.skipLoadingScreen) {
-      return <AppLoading />;
-    } else {
-      return (
-        <View style={styles.container}>
-          {Platform.OS === 'ios' && <StatusBar barStyle="default" />}
-          {Platform.OS === 'android' &&
-            <View style={styles.statusBarUnderlay} />}
-          <RootNavigation />
-        </View>
-      );
-    }
-  }
+    var rotation = this.position.x.interpolate({
+      inputRange: [this.props.width * -1, 0, this.props.width],
+      outputRange: ["-90deg", "0deg", "90deg"]
+    });
 
-  async _loadAssetsAsync() {
-    try {
-      await Promise.all([
-        Asset.loadAsync([
-          require('./assets/images/robot-dev.png'),
-          require('./assets/images/robot-prod.png'),
-        ]),
-        Font.loadAsync([
-          // This is the font that we are using for our tab bar
-          Ionicons.font,
-          // We include SpaceMono because we use it in HomeScreen.js. Feel free
-          // to remove this if you are not using it in your app
-          { 'space-mono': require('./assets/fonts/SpaceMono-Regular.ttf') },
-        ]),
-      ]);
-    } catch (e) {
-      // In this case, you might want to report the error to your error
-      // reporting service, for example Sentry
-      console.warn(
-        'There was an error caching assets (see: App.js), perhaps due to a ' +
-          'network timeout, so we skipped caching. Reload the app to try again.'
-      );
-      console.log(e);
-    } finally {
-      this.setState({ assetsAreLoaded: true });
+    return (
+      <Animated.View
+        {...this._panResponder.panHandlers}
+        style={[
+          styles.card,
+          {
+            zIndex: 100,
+            top: -5,
+            transform: [
+              {
+                translateX: this.position.x
+              },
+              {
+                translateY: this.position.y
+              },
+              {
+                rotate: rotation
+              }
+            ]
+          }
+        ]}
+      >
+        <Image
+          source={{
+            uri: this.props.user.photo
+          }}
+          style={{
+            height: this.props.width - 30,
+            width: this.props.width - 30
+          }}
+        />
+        <Text style={styles.cardText}>
+          {this.props.user.name}, {this.props.user.age}
+        </Text>
+      </Animated.View>
+    );
+  }
+}
+
+const Header = props => (
+  <View
+    style={[
+      styles.header,
+      {
+        width: props.width
+      }
+    ]}
+  >
+    <Text style={styles.logo}> kender </Text>
+  </View>
+);
+
+class Cards extends Component {
+  state = {
+    cards: [],
+    index: 0
+  };
+  componentWillMount() {
+    let cards = [];
+    for (var i = this.state.index; i < this.state.index + 3; i++) {
+      cards.push(HANDSOMEINDIVIDUALS[i]);
     }
+    this.setState({
+      cards
+    });
+  }
+  render() {
+    return (
+      <View
+        style={{
+          width: this.props.width,
+          height: this.props.width
+        }}
+      >
+        {this.state.cards.map((ken, index) => {
+          if (index === 2) {
+            return (
+              <ActiveCard user={ken} index={index} width={this.props.width} />
+            );
+          }
+
+          return <Card user={ken} index={index} width={this.props.width} />;
+        })}
+      </View>
+    );
+  }
+}
+
+export default class App extends Component {
+  state = {
+    width: 300
+  };
+
+  componentWillMount() {
+    this.setState({
+      width: Dimensions.get("window").width
+    });
+  }
+  render() {
+    return (
+      <View style={styles.container}>
+        <Header width={this.state.width} />
+        <Cards width={this.state.width} />
+        <Text style={styles.message}>
+          You like me no matter which way you swipe, thats undeniable.
+        </Text>
+      </View>
+    );
   }
 }
 
 const styles = StyleSheet.create({
+  card: {
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#cfcfcf",
+    position: "absolute",
+    left: 15
+  },
+  cardText: {
+    fontSize: 18,
+    padding: 15
+  },
+  header: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#cfcfcf",
+    flex: 0,
+    marginBottom: 15,
+    alignItems: "center"
+  },
+  logo: {
+    fontSize: 24,
+    color: "#DB4C2C",
+    fontWeight: "bold"
+  },
+  message: {
+    width: 300,
+    marginTop: 60,
+    fontSize: 18
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
-  statusBarUnderlay: {
-    height: 24,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
+    alignItems: "center",
+    justifyContent: "flex-start",
+    flexDirection: "column",
+    paddingTop: Constants.statusBarHeight,
+    backgroundColor: "#ecf0f1"
+  }
 });
