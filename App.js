@@ -61,7 +61,8 @@ const Card = props => (
         height: props.width - 30,
         width: props.width - 30
       }}
-    /> <Text style={styles.cardText}> Ken, 30 </Text>
+    />
+    <Text style={styles.cardText}> Ken, 30 </Text>
   </View>
 );
 
